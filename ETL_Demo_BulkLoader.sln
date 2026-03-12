@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35806.99 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETL_Demo_BulkLoader", "ETL_Demo_BulkLoader\ETL_Demo_BulkLoader.csproj", "{A438AF63-0ABA-4257-A5AF-88CCFCBE7ADC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A438AF63-0ABA-4257-A5AF-88CCFCBE7ADC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A438AF63-0ABA-4257-A5AF-88CCFCBE7ADC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A438AF63-0ABA-4257-A5AF-88CCFCBE7ADC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A438AF63-0ABA-4257-A5AF-88CCFCBE7ADC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7CFFAC89-42DF-4B7E-B6C5-D0D5ACD8DA0B}
+	EndGlobalSection
+EndGlobal
