@@ -8,7 +8,7 @@ AdventureWorks DB link:
 https://github.com/Microsoft/sql-server-samples/releases/tag/adventureworks
  
  # Setting up SQL for ETL
- Exercise-1: Setting up SQL for ETL
+ **Exercise-1: Setting up SQL for ETL**
 
  Step-1: Creating a StagingDB database
 
