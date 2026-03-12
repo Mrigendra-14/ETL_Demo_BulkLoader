@@ -1,4 +1,4 @@
---Exercise 4 — Profiling: Write SQL queries against stg. dataset to discover the problems. How many nulls in customer_id? How many distinct date formats exist? What's the distribution of regions? What are the scenarios where Email reports show nulls?
+**--Exercise 4 â€” Profiling: Write SQL queries against stg. dataset to discover the problems. How many nulls in customer_id? How many distinct date formats exist? What's the distribution of regions? What are the scenarios where Email reports show nulls?**
 
 Also, Attaching a seprate sql file which contains all the queries which I have written to perform the above task. File name is "Exercise-4.sql" and it is present in this structure. Below is the code snippet for reference.
 
