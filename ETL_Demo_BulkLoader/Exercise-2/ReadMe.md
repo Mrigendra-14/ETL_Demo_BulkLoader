@@ -1,4 +1,4 @@
-Exercise 2 — Perform Data staging
+**Exercise 2 â€” Perform Data staging**
 
 In Exercise-1, we have created the staging tables in the StagingDB database. Now, in Exercise-2, we will perform data staging by loading data from the source tables in the AdventureWorks database into the staging tables in the StagingDB database.
 
