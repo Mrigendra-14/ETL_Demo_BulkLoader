@@ -2,16 +2,16 @@
 
 Also, Attaching a seprate sql file which contains all the queries which I have written to perform the above task. File name is "Exercise-4.sql" and it is present in this structure. Below is the code snippet for reference.
 
---To perform this task I have written the following SQL quieries identify potential issues:
+**--To perform this task I have written the following SQL quieries identify potential issues:
 
---1.How many nulls in customer_id?
+--1.How many nulls in customer_id?**
 SELECT COUNT(*) AS NullCustomerID
 FROM stg_Customer
 WHERE CustomerID IS NULL;
 -- In above CustomerID is a primary identifier, so it should not be NULL.
 
 
---2.How many distinct date formats exist? 
+**--2.How many distinct date formats exist? **
 
 SELECT 
     COUNT(DISTINCT FORMAT(ModifiedDate, 'yyyy-MM-dd HH:mm:ss')) AS DistinctDateFormats
@@ -23,7 +23,7 @@ FROM stg_Customer;
 --The ModifiedDate column contains consistent datetime values with no format inconsistencies.
 
 
---3.What's the distribution of regions? (Sales Terrotory)
+**--3.What's the distribution of regions? (Sales Terrotory)**
 SELECT 
     t.Name AS TerritoryName,
     COUNT(c.CustomerID) AS CustomerCount
@@ -41,7 +41,7 @@ ORDER BY CustomerCount DESC;
 --This information can help understand geographic customer distribution and potential regional market strength.
 
 
---4.What are the scenarios where Email reports show nulls?
+**--4.What are the scenarios where Email reports show nulls?**
 
 
 
