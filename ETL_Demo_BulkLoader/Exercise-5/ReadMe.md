@@ -1,8 +1,8 @@
-# Exercise 5 — Transformation: Write the SQL transformer. Run it. Check the error log. How many rows were rejected? Why?
+# Exercise 5 â€” Transformation: Write the SQL transformer. Run it. Check the error log. How many rows were rejected? Why?
 Also, attaching this sql query in the seprate .sql file in the Exercise-4 folder.
 
 
---Step 1 — Create the Error Log Table
+**--Step 1 â€” Create the Error Log Table**
 
 --Here,First we are creating a table that stores rejected records during transformation.
 
@@ -19,7 +19,7 @@ Purpose of this table is:
 - To Track rejected rows
 - Track why transformation failed
 
---Step 2 — Create the Final Transformed Table
+**--Step 2 â€” Create the Final Transformed Table**
 
 CREATE TABLE trn_MarketingCustomer
 (
@@ -32,7 +32,7 @@ CREATE TABLE trn_MarketingCustomer
     TotalDue MONEY
 );
 
---Step 3 — Now here we are Creating the SQL Transformer Stored Procedure
+**--Step 3 â€” Now here we are Creating the SQL Transformer Stored Procedure**
 --This is the main transformation procedure.
 
 --In this procedure, we have used 6 table only, i.e stg_Customer, stg_Person, stg_EmailAddress, stg_SalesOrderHeader, stg_SalesTerritory and trn_MarketingCustomer.
@@ -84,10 +84,10 @@ WHERE
 
 END
 
---Step 4 — Log Rejected Records
+**--Step 4 â€” Log Rejected Records**
 
 -- in this step, we log records that fail transformation rules.
---Rule 1 — Missing CustomerID
+**--Rule 1 â€” Missing CustomerID**
 
 INSERT INTO ETL_ErrorLog
 (
@@ -107,7 +107,7 @@ WHERE CustomerID IS NULL;
 --When we have run this above Rule-1, then it shows that 0 rows affected.
 --This means, There are NO records in stg_Customer where CustomerID is NULL
 
---Rule 2 — Missing EmailAddress
+**--Rule 2 â€” Missing EmailAddress**
 
 INSERT INTO ETL_ErrorLog
 (
@@ -126,12 +126,12 @@ WHERE EmailAddress IS NULL;
 
 -- above query also shows that 0 rows affected.
 
---Step 5 — Run the Transformer
+**--Step 5 â€” Run the Transformer**
 --Here, we will Execute the transformation procedure.
 
 EXEC usp_Transform_MarketingCustomer;
 
---Step- 6: Check the error log
+**--Step- 6: Check the error log**
 --Here we will verify rejected row using below queries:
 
 SELECT * FROM ETL_ErrorLog;
@@ -140,7 +140,7 @@ SELECT * FROM ETL_ErrorLog;
 
 --No records were inserted into the error log because all rows in the staging tables satisfied the defined transformation rules.
 
---Step 7 — Count Rejected Rows, How many rows were rejected?
+**--Step 7 â€” Count Rejected Rows, How many rows were rejected?**
 
 SELECT COUNT(*) AS RejectedRows FROM ETL_ErrorLog;
 
