@@ -150,7 +150,7 @@ SELECT COUNT(*) AS RejectedRows FROM ETL_ErrorLog;
 
 **--Why were there no rejected rows?**
 
---There were no rejected rows because all records in the staging tables met the transformation criteria defined in the SQL transformer. Specifically, there were no records with NULL CustomerID in stg_Customer and no records with NULL EmailAddress in stg_EmailAddress, which were the conditions we set for logging errors. This indicates that the data quality in the staging tables is good and that all necessary fields for transformation are present.
+**--There were no rejected rows because all records in the staging tables met the transformation criteria defined in the SQL transformer. Specifically, there were no records with NULL CustomerID in stg_Customer and no records with NULL EmailAddress in stg_EmailAddress, which were the conditions we set for logging errors. This indicates that the data quality in the staging tables is good and that all necessary fields for transformation are present.**
 
 
 
