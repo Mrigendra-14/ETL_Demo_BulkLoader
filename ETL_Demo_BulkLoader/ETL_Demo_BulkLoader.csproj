@@ -14,6 +14,7 @@
   <ItemGroup>
     <Folder Include="Exercise-2\" />
     <Folder Include="Exercise-4\" />
+    <Folder Include="Exercise-5\" />
   </ItemGroup>
 
 </Project>
