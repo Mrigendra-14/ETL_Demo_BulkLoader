@@ -87,6 +87,7 @@ END
 **--Step 4 — Log Rejected Records**
 
 -- in this step, we log records that fail transformation rules.
+
 **--Rule 1 — Missing CustomerID**
 
 INSERT INTO ETL_ErrorLog
