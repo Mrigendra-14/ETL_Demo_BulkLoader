@@ -1,5 +1,10 @@
 # Exercise 5 — Transformation: Write the SQL transformer. Run it. Check the error log. How many rows were rejected? Why?
-Also, attaching this sql query in the seprate .sql file in the Exercise-4 folder.
+Also, attaching this sql query in the seprate .sql file in the Exercise-5 folder.
+
+# In this project, two separate logging tables are used to capture different aspects of the ETL pipeline. This separation is intentional and helps distinguish between process-level logging and data-level validation.
+1.ETL_Log (Process-Level Logging) - to track the execution of ETL processes at a table level.
+2.ETL_ErrorLog (Data-Level Logging) - to capture row-level data quality issues during transformation.
+
 
 
 --Step 1 — Create the Error Log Table
@@ -37,12 +42,38 @@ CREATE TABLE trn_MarketingCustomer
 
 --In this procedure, we have used 6 table only, i.e stg_Customer, stg_Person, stg_EmailAddress, stg_SalesOrderHeader, stg_SalesTerritory and trn_MarketingCustomer.
 
-CREATE PROCEDURE usp_Transform_MarketingCustomer
+CREATE OR ALTER PROCEDURE [dbo].[usp_Transform_MarketingCustomer]
 AS
 BEGIN
 
 SET NOCOUNT ON;
 
+--Make process idempotent
+TRUNCATE TABLE trn_MarketingCustomer;
+
+TRUNCATE TABLE ETL_ErrorLog;
+
+---- Log Rejected Rows based on business rule
+---- 1. Store Customers (No Person ID )
+---- 2. Missing EmailAddress
+
+INSERT INTO ETL_ErrorLog (SourceTable, RecordID, ErrorReason)
+ 
+SELECT
+    'stg_Customer',
+    CAST(c.CustomerID AS VARCHAR),
+    CASE
+        WHEN c.PersonID IS NULL THEN 'Store customer - No PersonID, no email possible'
+        WHEN e.EmailAddress IS NULL THEN 'PersonID exists but no EmailAddress record'
+    END
+FROM stg_Customer c
+LEFT JOIN stg_EmailAddress e 
+    ON c.PersonID = e.BusinessEntityID
+WHERE c.CustomerID IS NOT NULL
+  AND (c.PersonID IS NULL OR e.EmailAddress IS NULL);
+
+
+-- Insert valid rows into transformed table
 
 INSERT INTO trn_MarketingCustomer
 (
@@ -54,7 +85,6 @@ INSERT INTO trn_MarketingCustomer
     OrderDate,
     TotalDue
 )
-
 SELECT
     c.CustomerID,
     CONCAT(p.FirstName,' ',p.LastName) AS CustomerName,
@@ -63,97 +93,41 @@ SELECT
     s.SalesOrderID,
     s.OrderDate,
     s.TotalDue
-
+ 
 FROM stg_Customer c
-
+ 
 LEFT JOIN stg_Person p
     ON c.PersonID = p.BusinessEntityID
-
+ 
 LEFT JOIN stg_EmailAddress e
     ON c.PersonID = e.BusinessEntityID
-
-LEFT JOIN stg_SalesOrderHeader s
-    ON c.CustomerID = s.CustomerID
-
+ 
 LEFT JOIN stg_SalesTerritory t
     ON c.TerritoryID = t.TerritoryID
-
-WHERE
+ 
+LEFT JOIN stg_SalesOrderHeader s
+    ON c.CustomerID = s.CustomerID
+ 
+WHERE 
     c.CustomerID IS NOT NULL
+    AND c.PersonID IS NOT NULL
     AND e.EmailAddress IS NOT NULL;
 
-END
+END;
 
---Step 4 — Log Rejected Records
-
--- in this step, we log records that fail transformation rules.
---Rule 1 — Missing CustomerID
-
-INSERT INTO ETL_ErrorLog
-(
-    SourceTable,
-    RecordID,
-    ErrorReason
-)
-
-SELECT
-    'stg_Customer',
-    CAST(CustomerID AS VARCHAR),
-    'CustomerID is NULL'
-
-FROM stg_Customer
-WHERE CustomerID IS NULL;
-
---When we have run this above Rule-1, then it shows that 0 rows affected.
---This means, There are NO records in stg_Customer where CustomerID is NULL
-
---Rule 2 — Missing EmailAddress
-
-INSERT INTO ETL_ErrorLog
-(
-    SourceTable,
-    RecordID,
-    ErrorReason
-)
-
-SELECT
-    'stg_EmailAddress',
-    CAST(BusinessEntityID AS VARCHAR),
-    'EmailAddress is NULL'
-
-FROM stg_EmailAddress
-WHERE EmailAddress IS NULL;
-
--- above query also shows that 0 rows affected.
-
---Step 5 — Run the Transformer
+--Step 4 — Run the Transformer
 --Here, we will Execute the transformation procedure.
 
 EXEC usp_Transform_MarketingCustomer;
 
---Step- 6: Check the error log
+--Step- 5: Check the error log
 --Here we will verify rejected row using below queries:
 
 SELECT * FROM ETL_ErrorLog;
 
 --Result for above query:
 
---No records were inserted into the error log because all rows in the staging tables satisfied the defined transformation rules.
-
---Step 7 — Count Rejected Rows, How many rows were rejected?
-
-SELECT COUNT(*) AS RejectedRows FROM ETL_ErrorLog;
-
---Result for above query:
---This is also showing 0 "RejectedRows".
-
---Why were there no rejected rows?
-
---There were no rejected rows because all records in the staging tables met the transformation criteria defined in the SQL transformer. Specifically, there were no records with NULL CustomerID in stg_Customer and no records with NULL EmailAddress in stg_EmailAddress, which were the conditions we set for logging errors. This indicates that the data quality in the staging tables is good and that all necessary fields for transformation are present.
-
-
-
-  
+--Currently, it is returning 701 rows with all the details like, ErrorID, SourceTable, RecordID, ErrorReason, ErrorDate.
 
 
 
