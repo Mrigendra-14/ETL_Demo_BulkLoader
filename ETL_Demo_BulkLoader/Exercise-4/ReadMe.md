@@ -2,9 +2,11 @@
 
 Also, Attaching a seprate sql file which contains all the queries which I have written to perform the above task. File name is "Exercise-4.sql" and it is present in this structure. Below is the code snippet for reference.
 
-**--To perform this task I have written the following SQL quieries identify potential issues:
 
---1.How many nulls in customer_id?**
+--To perform this task I have written the following SQL quieries identify potential issues:
+
+**--1.How many nulls in customer_id?**
+
 SELECT COUNT(*) AS NullCustomerID
 FROM stg_Customer
 WHERE CustomerID IS NULL;
@@ -13,11 +15,14 @@ WHERE CustomerID IS NULL;
 
 **--2.How many distinct date formats exist? **
 
-**--Since the ModifiedDate was stored as DATETIME, the original date formats were lost. So, I used a VARCHAR column in staging to keep the original formats and check for inconsistencies.
 
--- Creating a new raw staging table-> ModifiedDate type is storing as VARCHAR- then doing the Profiling**
+**--Since the ModifiedDate was stored as DATETIME, the original date formats were lost. So, I used a VARCHAR column in staging to keep the original formats and check for inconsistencies.**
+
+**-- Creating a new raw staging table-> ModifiedDate type is storing as VARCHAR- then doing the Profiling**
+
 
 **--Step 1 — Create a new staging version**
+
 
 CREATE TABLE stg_Customer_Raw
 (
