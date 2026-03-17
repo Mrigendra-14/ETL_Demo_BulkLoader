@@ -2,8 +2,8 @@
 Also, attaching this sql query in the seprate .sql file in the Exercise-5 folder.
 
 # In this project, two separate logging tables are used to capture different aspects of the ETL pipeline. This separation is intentional and helps distinguish between process-level logging and data-level validation.
-1.ETL_Log (Process-Level Logging) - to track the execution of ETL processes at a table level.
-2.ETL_ErrorLog (Data-Level Logging) - to capture row-level data quality issues during transformation.
+**1.ETL_Log (Process-Level Logging) - to track the execution of ETL processes at a table level.**
+**2.ETL_ErrorLog (Data-Level Logging) - to capture row-level data quality issues during transformation.**
 
 
 
