@@ -130,5 +130,8 @@ SELECT * FROM ETL_ErrorLog;
 
 --Currently, it is returning 701 rows with all the details like, ErrorID, SourceTable, RecordID, ErrorReason, ErrorDate.
 
+<img width="1260" height="843" alt="image" src="https://github.com/user-attachments/assets/e61ff197-cd4b-45fc-8e0d-f579ff50f0bd" />
+
+
 
 
