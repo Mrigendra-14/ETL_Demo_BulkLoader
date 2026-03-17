@@ -2,8 +2,9 @@
 Also, attaching this sql query in the seprate .sql file in the Exercise-5 folder.
 
 # In this project, two separate logging tables are used to capture different aspects of the ETL pipeline. This separation is intentional and helps distinguish between process-level logging and data-level validation.
-1.ETL_Log (Process-Level Logging) - to track the execution of ETL processes at a table level.
-2.ETL_ErrorLog (Data-Level Logging) - to capture row-level data quality issues during transformation.
+**1.ETL_Log (Process-Level Logging) - to track the execution of ETL processes at a table level.**
+
+**2.ETL_ErrorLog (Data-Level Logging) - to capture row-level data quality issues during transformation.**
 
 
 
@@ -38,9 +39,12 @@ CREATE TABLE trn_MarketingCustomer
 );
 
 **--Step 3 — Now here we are Creating the SQL Transformer Stored Procedure**
+
 --This is the main transformation procedure.
 
---In this procedure, we have used 6 table only, i.e stg_Customer, stg_Person, stg_EmailAddress, stg_SalesOrderHeader, stg_SalesTerritory and trn_MarketingCustomer.
+--In this procedure, we have used 6 table only, 
+
+i.e stg_Customer, stg_Person, stg_EmailAddress, stg_SalesOrderHeader, stg_SalesTerritory and trn_MarketingCustomer.
 
 CREATE OR ALTER PROCEDURE [dbo].[usp_Transform_MarketingCustomer]
 AS
@@ -48,13 +52,16 @@ BEGIN
 
 SET NOCOUNT ON;
 
---Make process idempotent
+**--Make process idempotent**
+
 TRUNCATE TABLE trn_MarketingCustomer;
 
 TRUNCATE TABLE ETL_ErrorLog;
 
----- Log Rejected Rows based on business rule
+**---- Log Rejected Rows based on business rule**
+
 ---- 1. Store Customers (No Person ID )
+
 ---- 2. Missing EmailAddress
 
 INSERT INTO ETL_ErrorLog (SourceTable, RecordID, ErrorReason)
@@ -116,11 +123,13 @@ WHERE
 END;
 
 --Step 4 — Run the Transformer
+
 --Here, we will Execute the transformation procedure.
 
 EXEC usp_Transform_MarketingCustomer;
 
 --Step- 5: Check the error log
+
 --Here we will verify rejected row using below queries:
 
 SELECT * FROM ETL_ErrorLog;
@@ -128,6 +137,9 @@ SELECT * FROM ETL_ErrorLog;
 --Result for above query:
 
 --Currently, it is returning 701 rows with all the details like, ErrorID, SourceTable, RecordID, ErrorReason, ErrorDate.
+
+<img width="1260" height="843" alt="image" src="https://github.com/user-attachments/assets/e61ff197-cd4b-45fc-8e0d-f579ff50f0bd" />
+
 
 
 
