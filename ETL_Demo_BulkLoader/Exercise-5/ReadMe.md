@@ -39,9 +39,12 @@ CREATE TABLE trn_MarketingCustomer
 );
 
 **--Step 3 — Now here we are Creating the SQL Transformer Stored Procedure**
+
 --This is the main transformation procedure.
 
---In this procedure, we have used 6 table only, i.e stg_Customer, stg_Person, stg_EmailAddress, stg_SalesOrderHeader, stg_SalesTerritory and trn_MarketingCustomer.
+--In this procedure, we have used 6 table only, 
+
+i.e stg_Customer, stg_Person, stg_EmailAddress, stg_SalesOrderHeader, stg_SalesTerritory and trn_MarketingCustomer.
 
 CREATE OR ALTER PROCEDURE [dbo].[usp_Transform_MarketingCustomer]
 AS
@@ -49,13 +52,16 @@ BEGIN
 
 SET NOCOUNT ON;
 
---Make process idempotent
+**--Make process idempotent**
+
 TRUNCATE TABLE trn_MarketingCustomer;
 
 TRUNCATE TABLE ETL_ErrorLog;
 
----- Log Rejected Rows based on business rule
+**---- Log Rejected Rows based on business rule**
+
 ---- 1. Store Customers (No Person ID )
+
 ---- 2. Missing EmailAddress
 
 INSERT INTO ETL_ErrorLog (SourceTable, RecordID, ErrorReason)
@@ -117,11 +123,13 @@ WHERE
 END;
 
 --Step 4 — Run the Transformer
+
 --Here, we will Execute the transformation procedure.
 
 EXEC usp_Transform_MarketingCustomer;
 
 --Step- 5: Check the error log
+
 --Here we will verify rejected row using below queries:
 
 SELECT * FROM ETL_ErrorLog;
