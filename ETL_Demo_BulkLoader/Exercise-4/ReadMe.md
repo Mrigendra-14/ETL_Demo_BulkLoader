@@ -13,11 +13,12 @@ WHERE CustomerID IS NULL;
 
 **--2.How many distinct date formats exist? **
 
---Since the ModifiedDate was stored as DATETIME, the original date formats were lost. So, I used a VARCHAR column in staging to keep the original formats and check for inconsistencies.
+**--Since the ModifiedDate was stored as DATETIME, the original date formats were lost. So, I used a VARCHAR column in staging to keep the original formats and check for inconsistencies.
 
--- Creating a new raw staging table-> ModifiedDate type is storing as VARCHAR- then doing the Profiling
+-- Creating a new raw staging table-> ModifiedDate type is storing as VARCHAR- then doing the Profiling**
 
---Step 1 — Create a new staging version
+**--Step 1 — Create a new staging version**
+
 CREATE TABLE stg_Customer_Raw
 (
     CustomerID INT,
@@ -26,7 +27,8 @@ CREATE TABLE stg_Customer_Raw
     ModifiedDate VARCHAR(50)
 );
 
---Step 2 — Insert sample mixed-format data
+**--Step 2 — Insert sample mixed-format data**
+
 
 INSERT INTO stg_Customer_Raw
 (CustomerID, PersonID, TerritoryID, ModifiedDate) VALUES
@@ -35,21 +37,29 @@ INSERT INTO stg_Customer_Raw
 (3, 102, 3, 'Jan 15 2023'),
 (4, 103, 4, '2023-01-15');
 
---Step 3 — Now Run profiling
+**--Step 3 — Now Run profiling**
+
 
 SELECT ModifiedDate,COUNT(*) AS Occurrences FROM stg_Customer_Raw
 GROUP BY ModifiedDate
 ORDER BY Occurrences DESC;
 
---Step 4 detect non-standard patterns:
+<img width="262" height="162" alt="image" src="https://github.com/user-attachments/assets/cbbdce97-bf53-4124-997c-4a665c69903d" />
+
+
+**--Step 4 detect non-standard patterns:**
+
 
 SELECT COUNT(*) AS NonISODates
 FROM stg_Customer_Raw
 WHERE ModifiedDate NOT LIKE '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]%';
 
+<img width="274" height="97" alt="image" src="https://github.com/user-attachments/assets/1845597f-9e8c-4b5c-827c-edc83f790cbb" />
 
 
---attaching the screenshot for the output in the Exercise-4 reame.md file.
+
+
+
 
 --Below query is the previous one and this query always returns 1 because DATETIME removes original date format differences.
 
