@@ -13,14 +13,52 @@ WHERE CustomerID IS NULL;
 
 **--2.How many distinct date formats exist? **
 
+--Since the ModifiedDate was stored as DATETIME, the original date formats were lost. So, I used a VARCHAR column in staging to keep the original formats and check for inconsistencies.
+
+-- Creating a new raw staging table-> ModifiedDate type is storing as VARCHAR- then doing the Profiling
+
+--Step 1 — Create a new staging version
+CREATE TABLE stg_Customer_Raw
+(
+    CustomerID INT,
+    PersonID INT,
+    TerritoryID INT,
+    ModifiedDate VARCHAR(50)
+);
+
+--Step 2 — Insert sample mixed-format data
+
+INSERT INTO stg_Customer_Raw
+(CustomerID, PersonID, TerritoryID, ModifiedDate) VALUES
+(1, 100, 1, '2023/01/15'),
+(2, 101, 2, '15-01-2023'),
+(3, 102, 3, 'Jan 15 2023'),
+(4, 103, 4, '2023-01-15');
+
+--Step 3 — Now Run profiling
+
+SELECT ModifiedDate,COUNT(*) AS Occurrences FROM stg_Customer_Raw
+GROUP BY ModifiedDate
+ORDER BY Occurrences DESC;
+
+--Step 4 detect non-standard patterns:
+
+SELECT COUNT(*) AS NonISODates
+FROM stg_Customer_Raw
+WHERE ModifiedDate NOT LIKE '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]%';
+
+
+
+--attaching the screenshot for the output in the Exercise-4 reame.md file.
+
+--Below query is the previous one and this query always returns 1 because DATETIME removes original date format differences.
+
 SELECT 
     COUNT(DISTINCT FORMAT(ModifiedDate, 'yyyy-MM-dd HH:mm:ss')) AS DistinctDateFormats
 FROM stg_Customer;
 --Only one date pattern exists in the datset.
 --SQL Server stores DATETIME values internally without a specific format.
---Formats appear only when converting the value to text. The result confirms that the ModifiedDate column is stored consistently.
 
---The ModifiedDate column contains consistent datetime values with no format inconsistencies.
 
 
 **--3.What's the distribution of regions? (Sales Terrotory)**
