@@ -13,7 +13,7 @@ WHERE CustomerID IS NULL;
 -- In above CustomerID is a primary identifier, so it should not be NULL.
 
 
-**--2.How many distinct date formats exist? **
+**--2.How many distinct date formats exist?**
 
 
 **--Since the ModifiedDate was stored as DATETIME, the original date formats were lost. So, I used a VARCHAR column in staging to keep the original formats and check for inconsistencies.**
