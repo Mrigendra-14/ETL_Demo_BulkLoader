@@ -1,4 +1,4 @@
-# Exercise 5 — Transformation: Write the SQL transformer. Run it. Check the error log. How many rows were rejected? Why?
+# Exercise 5 â€” Transformation: Write the SQL transformer. Run it. Check the error log. How many rows were rejected? Why?
 Also, attaching this sql query in the seprate .sql file in the Exercise-5 folder.
 
 # In this project, two separate logging tables are used to capture different aspects of the ETL pipeline. This separation is intentional and helps distinguish between process-level logging and data-level validation.
@@ -7,7 +7,7 @@ Also, attaching this sql query in the seprate .sql file in the Exercise-5 folder
 
 
 
---Step 1 — Create the Error Log Table
+--Step 1 â€” Create the Error Log Table
 
 --Here,First we are creating a table that stores rejected records during transformation.
 
@@ -24,7 +24,7 @@ Purpose of this table is:
 - To Track rejected rows
 - Track why transformation failed
 
---Step 2 — Create the Final Transformed Table
+**--Step 2 â€” Create the Final Transformed Table**
 
 CREATE TABLE trn_MarketingCustomer
 (
@@ -37,7 +37,7 @@ CREATE TABLE trn_MarketingCustomer
     TotalDue MONEY
 );
 
---Step 3 — Now here we are Creating the SQL Transformer Stored Procedure
+**--Step 3 â€” Now here we are Creating the SQL Transformer Stored Procedure**
 --This is the main transformation procedure.
 
 --In this procedure, we have used 6 table only, i.e stg_Customer, stg_Person, stg_EmailAddress, stg_SalesOrderHeader, stg_SalesTerritory and trn_MarketingCustomer.
@@ -115,7 +115,7 @@ WHERE
 
 END;
 
---Step 4 — Run the Transformer
+--Step 4 â€” Run the Transformer
 --Here, we will Execute the transformation procedure.
 
 EXEC usp_Transform_MarketingCustomer;
