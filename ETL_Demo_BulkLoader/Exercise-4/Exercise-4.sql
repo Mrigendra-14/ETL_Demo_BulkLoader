@@ -1,4 +1,4 @@
---Exercise 4 — Profiling: Write SQL queries against stg. dataset to discover the problems. How many nulls in customer_id? How many distinct date formats exist? What's the distribution of regions? What are the scenarios where Email reports show nulls?
+--Exercise 4 â€” Profiling: Write SQL queries against stg. dataset to discover the problems. How many nulls in customer_id? How many distinct date formats exist? What's the distribution of regions? What are the scenarios where Email reports show nulls?
 
 --To perform this task I have written the following SQL quieries identify potential issues:
 
@@ -13,7 +13,7 @@ WHERE CustomerID IS NULL;
 
 -- Creating a new raw staging table-> ModifiedDate type is storing as VARCHAR- then doing the Profiling
 
---Step 1 — Create a new staging version
+--Step 1 â€” Create a new staging version
 CREATE TABLE stg_Customer_Raw
 (
     CustomerID INT,
@@ -22,7 +22,7 @@ CREATE TABLE stg_Customer_Raw
     ModifiedDate VARCHAR(50)
 );
 
---Step 2 — Insert sample mixed-format data
+--Step 2 â€” Insert sample mixed-format data
 
 INSERT INTO stg_Customer_Raw
 (CustomerID, PersonID, TerritoryID, ModifiedDate) VALUES
@@ -31,7 +31,7 @@ INSERT INTO stg_Customer_Raw
 (3, 102, 3, 'Jan 15 2023'),
 (4, 103, 4, '2023-01-15');
 
---Step 3 — Now Run profiling
+--Step 3 â€” Now Run profiling
 
 SELECT ModifiedDate,COUNT(*) AS Occurrences FROM stg_Customer_Raw
 GROUP BY ModifiedDate
@@ -46,7 +46,7 @@ WHERE ModifiedDate NOT LIKE '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]%';
 --Since the ModifiedDate was stored as DATETIME, the original date formats were lost.
 --So, I used a VARCHAR column in staging to keep the original formats and check for inconsistencies.
 
---Also, attaching the screenshot for the output in the Exercise-4 reame.md file.
+--Also, attaching the screenshot for the output in the Exercise-4 folder inside the reame.md file.
 
 
 --SELECT 
