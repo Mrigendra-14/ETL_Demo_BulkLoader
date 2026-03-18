@@ -1,3 +1,7 @@
+--usp_LoadStaging
+--Load data from AdventureWorks2019 to StagingDB. 
+--Each table is handled in a separate TRY-CATCH block to ensure that if one table fails, the others can still load.
+
 USE [StagingDB]
 GO
 /****** Object:  StoredProcedure [dbo].[usp_LoadStaging]    Script Date: 12-03-2026 18:12:46 ******/
@@ -14,8 +18,6 @@ Begin
 	DECLARE @RowCount Int;
 	DECLARE @TableName NVARCHAR(100);
 
-	BEGIN TRY
-
 	-------------------------
 	--First truncate all table
 	--------------------------
@@ -23,19 +25,24 @@ Begin
 	    TRUNCATE TABLE stg_Customer;
         TRUNCATE TABLE stg_EmailAddress;
         TRUNCATE TABLE stg_Person;
-        TRUNCATE TABLE stg_Product;
-        TRUNCATE TABLE stg_ProductCategory;
         TRUNCATE TABLE stg_SalesOrderDetail;
         TRUNCATE TABLE stg_SalesOrderHeader;
-        TRUNCATE TABLE stg_SalesReason;
         TRUNCATE TABLE stg_SalesTerritory;
-        TRUNCATE TABLE stg_SpecialOffer;
-        TRUNCATE TABLE stg_SpecialOfferProduct;
-        TRUNCATE TABLE stg_Store;
 
-		-------------------
+        --NOTE
+        --Below tables are not used in the current ETL Exercise, keeping for future use.
+        --TRUNCATE TABLE stg_Product;
+        --TRUNCATE TABLE stg_ProductCategory;
+        --TRUNCATE TABLE stg_SalesReason;
+        --TRUNCATE TABLE stg_SpecialOffer;
+        --TRUNCATE TABLE stg_SpecialOfferProduct;
+        --TRUNCATE TABLE stg_Store;
+
+		----------------------
 		--Now load stg_Customer
 		----------------------
+
+        BEGIN TRY
 
 		SET @TableName = 'stg_Customer';
 		SET @StartTime = GETDATE();
@@ -52,10 +59,25 @@ Begin
 
 		INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
         VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
+
+        END TRY
+
+        BEGIN CATCH
+
+        INSERT INTO ETL_Log
+        (TableName, StartTime, EndTime, RowsExtracted, Status, ErrorMessage)
+        VALUES
+        (@TableName, @StartTime, GETDATE(), 0, 'Failed', ERROR_MESSAGE());
+
+        END CATCH;
+
+
         
 		-----------------------------
 		--Now Loading stg_EmailAddress
 		------------------------------
+
+        BEGIN TRY
 
 		SET @TableName = 'stg_EmailAddress';
 		SET @StartTime = GETDATE();
@@ -71,9 +93,22 @@ Begin
         INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
         VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
 
+        END TRY
+
+        BEGIN CATCH
+
+        INSERT INTO ETL_Log
+        (TableName, StartTime, EndTime, RowsExtracted, Status, ErrorMessage)
+        VALUES
+        (@TableName, @StartTime, GETDATE(), 0, 'Failed', ERROR_MESSAGE());
+
+        END CATCH;
+
 		-----------------------------
 		--Now loading stg_Person
 		-----------------------------
+
+        BEGIN TRY
 
 		SET @TableName = 'stg_Person';
 		SET @StartTime = GETDATE();
@@ -98,9 +133,144 @@ Begin
         INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
         VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
 
-		-----------------------
+        END TRY
+
+        BEGIN CATCH
+
+        INSERT INTO ETL_Log
+        (TableName, StartTime, EndTime, RowsExtracted, Status, ErrorMessage)
+        VALUES
+        (@TableName, @StartTime, GETDATE(), 0, 'Failed', ERROR_MESSAGE());
+
+        END CATCH;
+		
+
+		---------------------------------
+		--Loading stg_SalesOrderDetail
+		---------------------------------
+
+        BEGIN TRY
+
+		SET @TableName  = 'stg_SalesOrderDetail';
+        SET @StartTime  = GETDATE();
+
+		INSERT INTO stg_SalesOrderDetail
+        (
+            SalesOrderID, SalesOrderDetailID, CarrierTrackingNumber,
+            OrderQty, ProductID, SpecialOfferID,
+            UnitPrice, UnitPriceDiscount, LineTotal,
+            rowguid, ModifiedDate, ETL_LoadDate
+        )
+        SELECT
+            SalesOrderID, SalesOrderDetailID, CarrierTrackingNumber,
+            OrderQty, ProductID, SpecialOfferID,
+            UnitPrice, UnitPriceDiscount, LineTotal,
+            rowguid, ModifiedDate, GETDATE()
+        FROM AdventureWorks2019.Sales.SalesOrderDetail;
+
+        SET @RowCount = @@ROWCOUNT;
+        INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
+        VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
+
+        END TRY
+
+        BEGIN CATCH
+
+        INSERT INTO ETL_Log
+        (TableName, StartTime, EndTime, RowsExtracted, Status, ErrorMessage)
+        VALUES
+        (@TableName, @StartTime, GETDATE(), 0, 'Failed', ERROR_MESSAGE());
+
+        END CATCH;
+
+        
+		----------------------------------
+		--Loading stg_SalesOrderHeader
+		----------------------------------
+
+        BEGIN TRY
+
+		SET @TableName  = 'stg_SalesOrderHeader';
+        SET @StartTime  = GETDATE();
+
+		INSERT INTO stg_SalesOrderHeader
+        (
+            SalesOrderID, RevisionNumber, OrderDate, DueDate, ShipDate,
+            Status, OnlineOrderFlag, SalesOrderNumber, PurchaseOrderNumber,
+            AccountNumber, CustomerID, SalesPersonID, TerritoryID,
+            BillToAddressID, ShipToAddressID, ShipMethodID,
+            CreditCardID, CreditCardApprovalCode, CurrencyRateID,
+            SubTotal, TaxAmt, Freight, TotalDue, Comment,
+            rowguid, ModifiedDate, ETL_LoadDate
+        )
+        SELECT
+            SalesOrderID, RevisionNumber, OrderDate, DueDate, ShipDate,
+            Status, OnlineOrderFlag, SalesOrderNumber, PurchaseOrderNumber,
+            AccountNumber, CustomerID, SalesPersonID, TerritoryID,
+            BillToAddressID, ShipToAddressID, ShipMethodID,
+            CreditCardID, CreditCardApprovalCode, CurrencyRateID,
+            SubTotal, TaxAmt, Freight, TotalDue, Comment,
+            rowguid, ModifiedDate, GETDATE()
+        FROM AdventureWorks2019.Sales.SalesOrderHeader;
+
+        SET @RowCount = @@ROWCOUNT;
+        INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
+        VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
+
+        END TRY
+
+        BEGIN CATCH
+
+        INSERT INTO ETL_Log
+        (TableName, StartTime, EndTime, RowsExtracted, Status, ErrorMessage)
+        VALUES
+        (@TableName, @StartTime, GETDATE(), 0, 'Failed', ERROR_MESSAGE());
+
+        END CATCH;
+
+        --------------------------------
+		--Load stg_SalesTerritory
+		--------------------------------
+
+        BEGIN TRY
+
+		SET @TableName  = 'stg_SalesTerritory';
+        SET @StartTime  = GETDATE();
+
+        INSERT INTO stg_SalesTerritory
+        (
+            TerritoryID, Name, CountryRegionCode, TerritoryGroup,
+            SalesYTD, SalesLastYear, CostYTD, CostLastYear,
+            rowguid, ModifiedDate, ETL_LoadDate
+        )
+        SELECT
+            TerritoryID, Name, CountryRegionCode,
+            [Group],        -- renamed TerritoryGroup in staging
+            SalesYTD, SalesLastYear, CostYTD, CostLastYear,
+            rowguid, ModifiedDate, GETDATE()
+        FROM AdventureWorks2019.Sales.SalesTerritory;
+
+        SET @RowCount = @@ROWCOUNT;
+        INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
+        VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
+
+        END TRY
+
+        BEGIN CATCH
+
+        INSERT INTO ETL_Log
+        (TableName, StartTime, EndTime, RowsExtracted, Status, ErrorMessage)
+        VALUES
+        (@TableName, @StartTime, GETDATE(), 0, 'Failed', ERROR_MESSAGE());
+
+        END CATCH;
+
+        /*
+        -----------------------
 		--Loading stg_Product
 		-----------------------
+
+        BEGIN TRY
 
 		SET @TableName = 'stg_Product';
 		SET @StartTime = GETDATE();
@@ -130,9 +300,22 @@ Begin
         INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
         VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
 
+        END TRY
+
+        BEGIN CATCH
+
+        INSERT INTO ETL_Log
+        (TableName, StartTime, EndTime, RowsExtracted, Status, ErrorMessage)
+        VALUES
+        (@TableName, @StartTime, GETDATE(), 0, 'Failed', ERROR_MESSAGE());
+
+        END CATCH;
+
 		-----------------------------
 		--Loading stg_ProductCategory
 		-----------------------------
+
+        BEGIN TRY
 
 		SET @TableName = 'stg_ProductCategory';
 		SET @StartTime  = GETDATE();
@@ -151,65 +334,22 @@ Begin
         INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
         VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
 
-		----------------------------------
-		--Loading stg_SalesOrderHeader
-		----------------------------------
+        END TRY
 
-		SET @TableName  = 'stg_SalesOrderHeader';
-        SET @StartTime  = GETDATE();
+        BEGIN CATCH
 
-		INSERT INTO stg_SalesOrderHeader
-        (
-            SalesOrderID, RevisionNumber, OrderDate, DueDate, ShipDate,
-            Status, OnlineOrderFlag, SalesOrderNumber, PurchaseOrderNumber,
-            AccountNumber, CustomerID, SalesPersonID, TerritoryID,
-            BillToAddressID, ShipToAddressID, ShipMethodID,
-            CreditCardID, CreditCardApprovalCode, CurrencyRateID,
-            SubTotal, TaxAmt, Freight, TotalDue, Comment,
-            rowguid, ModifiedDate, ETL_LoadDate
-        )
-        SELECT
-            SalesOrderID, RevisionNumber, OrderDate, DueDate, ShipDate,
-            Status, OnlineOrderFlag, SalesOrderNumber, PurchaseOrderNumber,
-            AccountNumber, CustomerID, SalesPersonID, TerritoryID,
-            BillToAddressID, ShipToAddressID, ShipMethodID,
-            CreditCardID, CreditCardApprovalCode, CurrencyRateID,
-            SubTotal, TaxAmt, Freight, TotalDue, Comment,
-            rowguid, ModifiedDate, GETDATE()
-        FROM AdventureWorks2019.Sales.SalesOrderHeader;
+        INSERT INTO ETL_Log
+        (TableName, StartTime, EndTime, RowsExtracted, Status, ErrorMessage)
+        VALUES
+        (@TableName, @StartTime, GETDATE(), 0, 'Failed', ERROR_MESSAGE());
 
-        SET @RowCount = @@ROWCOUNT;
-        INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
-        VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
-
-		---------------------------------
-		--Loading stg_SalesOrderDetail
-		---------------------------------
-
-		SET @TableName  = 'stg_SalesOrderDetail';
-        SET @StartTime  = GETDATE();
-
-		INSERT INTO stg_SalesOrderDetail
-        (
-            SalesOrderID, SalesOrderDetailID, CarrierTrackingNumber,
-            OrderQty, ProductID, SpecialOfferID,
-            UnitPrice, UnitPriceDiscount, LineTotal,
-            rowguid, ModifiedDate, ETL_LoadDate
-        )
-        SELECT
-            SalesOrderID, SalesOrderDetailID, CarrierTrackingNumber,
-            OrderQty, ProductID, SpecialOfferID,
-            UnitPrice, UnitPriceDiscount, LineTotal,
-            rowguid, ModifiedDate, GETDATE()
-        FROM AdventureWorks2019.Sales.SalesOrderDetail;
-
-        SET @RowCount = @@ROWCOUNT;
-        INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
-        VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
+        END CATCH;
 
 		----------------------------------------
 		--Loading stg_SalesReason
 		----------------------------------------
+
+        BEGIN TRY
 
 		SET @TableName  = 'stg_SalesReason';
         SET @StartTime  = GETDATE();
@@ -228,33 +368,24 @@ Begin
         INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
         VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
 
-		--------------------------------
-		--Load stg_SalesTerritory
-		--------------------------------
+        END TRY
 
-		SET @TableName  = 'stg_SalesTerritory';
-        SET @StartTime  = GETDATE();
+        BEGIN CATCH
 
-        INSERT INTO stg_SalesTerritory
-        (
-            TerritoryID, Name, CountryRegionCode, TerritoryGroup,
-            SalesYTD, SalesLastYear, CostYTD, CostLastYear,
-            rowguid, ModifiedDate, ETL_LoadDate
-        )
-        SELECT
-            TerritoryID, Name, CountryRegionCode,
-            [Group],        -- renamed TerritoryGroup in staging
-            SalesYTD, SalesLastYear, CostYTD, CostLastYear,
-            rowguid, ModifiedDate, GETDATE()
-        FROM AdventureWorks2019.Sales.SalesTerritory;
+        INSERT INTO ETL_Log
+        (TableName, StartTime, EndTime, RowsExtracted, Status, ErrorMessage)
+        VALUES
+        (@TableName, @StartTime, GETDATE(), 0, 'Failed', ERROR_MESSAGE());
 
-        SET @RowCount = @@ROWCOUNT;
-        INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
-        VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
+        END CATCH;
+
+		
 
 		----------------------------
 		--Loading stg_SpecialOffer
 		----------------------------
+
+        BEGIN TRY
 
 		SET @TableName  = 'stg_SpecialOffer';
         SET @StartTime  = GETDATE();
@@ -275,9 +406,22 @@ Begin
         INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
         VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
 
+        END TRY
+
+        BEGIN CATCH
+
+        INSERT INTO ETL_Log
+        (TableName, StartTime, EndTime, RowsExtracted, Status, ErrorMessage)
+        VALUES
+        (@TableName, @StartTime, GETDATE(), 0, 'Failed', ERROR_MESSAGE());
+
+        END CATCH;
+
 		--------------------------------------
 		-- Loading stg_SpecialOfferProduct
 		--------------------------------------
+
+        BEGIN TRY
 
 		SET @TableName  = 'stg_SpecialOfferProduct';
         SET @StartTime  = GETDATE();
@@ -296,9 +440,22 @@ Begin
         INSERT INTO ETL_Log(TableName, StartTime, EndTime, RowsExtracted, Status)
         VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
 
+        END TRY
+
+        BEGIN CATCH
+
+        INSERT INTO ETL_Log
+        (TableName, StartTime, EndTime, RowsExtracted, Status, ErrorMessage)
+        VALUES
+        (@TableName, @StartTime, GETDATE(), 0, 'Failed', ERROR_MESSAGE());
+
+        END CATCH;
+
 		----------------------------
 		--stg_Store
 		----------------------------
+
+        BEGIN TRY
 
 		SET @TableName  = 'stg_Store';
         SET @StartTime  = GETDATE();
@@ -319,6 +476,7 @@ Begin
         VALUES (@TableName, @StartTime, GETDATE(), @RowCount, 'Success');
 
 		END TRY
+
         BEGIN CATCH
 
 		INSERT INTO ETL_Log
@@ -326,7 +484,7 @@ Begin
         VALUES
         (@TableName, @StartTime, GETDATE(), 0, 'Failed', ERROR_MESSAGE());
 
-        PRINT 'ERROR in: '  + @TableName;
-        PRINT 'Message:  '  + ERROR_MESSAGE();
-    END CATCH
+        END CATCH;
+        */
+    
 END;
