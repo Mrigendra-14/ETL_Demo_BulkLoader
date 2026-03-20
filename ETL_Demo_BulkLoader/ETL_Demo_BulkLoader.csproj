@@ -8,13 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="33.1.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Exercise-2\" />
     <Folder Include="Exercise-4\" />
-    <Folder Include="Exercise-5\" />
+    <Folder Include="Exercise-5\" />  
   </ItemGroup>
 
 </Project>

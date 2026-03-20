@@ -1,6 +1,9 @@
-﻿using System.Data;
-using System.Data.SqlClient;
+﻿using System.Configuration;
+using System.Data;
+using Microsoft.Data.SqlClient;
+using System.Globalization;
 using System.IO;
+using CsvHelper;
 
 
 
@@ -8,69 +11,55 @@ namespace ETL_Demo_BulkLoader
 {
     internal class Program
     {
-       static string connectionString = "Server=ASEN-PL--MDWIVE\\MSSQLSERVERNEW;Database=StagingDB;Trusted_Connection=True;";
-
-        
+        static string connectionString = ConfigurationManager.ConnectionStrings["DbConnection"].ConnectionString;
         static DataTable ReadCsv(string filePath)
         {
             DataTable dt = new DataTable();
-            int rowGuidIndex = -1;
 
             using (var reader = new StreamReader(filePath))
+            using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
             {
-                bool isFirstRow = true;
+                // Read header first
+                csv.Read();
+                csv.ReadHeader();
+                string[] headers = csv.HeaderRecord;
 
-                while (!reader.EndOfStream)
+                
+                foreach (var header in headers)
                 {
-                    var line = reader.ReadLine();
-                    var values = line.Split(',');
-
-                    if (isFirstRow)
-                    {
-                        for (int i = 0; i < values.Length; i++)
-                        {
-                            string col = values[i].Trim();
-
-                            if (col.Equals("rowguid", StringComparison.OrdinalIgnoreCase))
-                            {
-                                dt.Columns.Add(col, typeof(Guid));
-                                rowGuidIndex = i;
-                            }
-                            else
-                            {
-                                dt.Columns.Add(col, typeof(string));
-                            }
-                        }
-
-                        isFirstRow = false;
-                    }
+                    if (header.Equals("rowguid", StringComparison.OrdinalIgnoreCase))
+                        dt.Columns.Add(header, typeof(Guid));
                     else
+                        dt.Columns.Add(header, typeof(string));
+                }
+
+                
+                while (csv.Read())
+                {
+                    DataRow row = dt.NewRow();
+                    foreach (var header in headers)
                     {
-                        object[] row = new object[values.Length];
+                        string val = csv.GetField(header);
+                        string cleaned = val?.Trim().Trim('"').Trim('{', '}').Trim('(', ')');
 
-                        for (int i = 0; i < values.Length; i++)
+                        
+                        if (string.IsNullOrWhiteSpace(cleaned))
                         {
-                            string value = values[i].Trim().Trim('"').Trim('{', '}').Trim('(', ')');
-
-                            if (string.IsNullOrWhiteSpace(value))
-                            {
-                                row[i] = DBNull.Value;
-                            }
-                            else if (i == rowGuidIndex)
-                            {
-                                if (Guid.TryParse(value, out Guid guidVal))
-                                    row[i] = guidVal;
-                                else
-                                    row[i] = DBNull.Value;
-                            }
-                            else
-                            {
-                                row[i] = value;
-                            }
+                            row[header] = DBNull.Value;
                         }
-
-                        dt.Rows.Add(row);
+                        
+                        else if (header.Equals("rowguid", StringComparison.OrdinalIgnoreCase))
+                        {
+                            row[header] = Guid.TryParse(cleaned, out Guid g)
+                                ? g
+                                : DBNull.Value;
+                        }
+                        else
+                        {
+                            row[header] = cleaned;
+                        }
                     }
+                    dt.Rows.Add(row);
                 }
             }
 
@@ -80,34 +69,91 @@ namespace ETL_Demo_BulkLoader
         static void BulkInsert(string filePath, string tableName)
         {
             DataTable dt = ReadCsv(filePath);
+            DateTime startTime = DateTime.Now;
+            bool isSuccess = true;
+
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                conn.Open();
 
-                using (SqlBulkCopy bulkCopy = new SqlBulkCopy(conn))
+                conn.Open();
+                try
                 {
-                    bulkCopy.DestinationTableName = tableName;
-                    foreach (DataColumn column in dt.Columns)
+
+                    using (SqlBulkCopy bulkCopy = new SqlBulkCopy(conn))
                     {
-                        if (tableName == "stg_SalesTerritory" && column.ColumnName == "Group")
-                            bulkCopy.ColumnMappings.Add("Group", "TerritoryGroup");
-                        else
-                            bulkCopy.ColumnMappings.Add(column.ColumnName, column.ColumnName);
-                    }
-                    try
-                    {
+                        bulkCopy.DestinationTableName = tableName;
+                        foreach (DataColumn column in dt.Columns)
+                        {
+                            if (tableName == "stg_SalesTerritory" && column.ColumnName == "Group")
+                                bulkCopy.ColumnMappings.Add("Group", "TerritoryGroup");
+                            else
+                                bulkCopy.ColumnMappings.Add(column.ColumnName, column.ColumnName);
+                        }
+
+
+
+                        bulkCopy.BatchSize = 1000;
+                        bulkCopy.BulkCopyTimeout = 120;
                         bulkCopy.WriteToServer(dt);
+                        DateTime endTime = DateTime.Now;
+                        LogToDatabase(conn, tableName, dt.Rows.Count, startTime, endTime);
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error loading {filePath} into {tableName}: {ex.Message}");
-                    }
+                }
+
+
+
+                catch (Exception ex)
+                {
+                    isSuccess = false;
+                    DateTime endTime = DateTime.Now;
+                    LogErrorToDatabase(conn, tableName, ex.Message, startTime, endTime);
+                    Console.WriteLine($"Error loading {filePath} into {tableName}: {ex.Message}");
                 }
             }
 
-            Console.WriteLine($"Loaded {filePath} into {tableName}");
-           
+
+            if (isSuccess)
+            {
+                Console.WriteLine($"Loaded {dt.Rows.Count} rows from {filePath} into {tableName}");
+            }
+
+
+        }
+
+        static void LogToDatabase(SqlConnection conn, string tableName, int rowCount, DateTime start, DateTime end)
+        {
+
+            string query = @"
+                INSERT INTO ETL_Log (TableName, StartTime, EndTime, RowsExtracted, Status)
+                VALUES (@TableName, @StartTime, @EndTime, @RowCount, 'Success')";
+
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@TableName", tableName);
+                cmd.Parameters.AddWithValue("@RowCount", rowCount);
+                cmd.Parameters.AddWithValue("@StartTime", start);
+                cmd.Parameters.AddWithValue("@EndTime", end);
+                cmd.ExecuteNonQuery();
+            }
+
+        }
+        static void LogErrorToDatabase(SqlConnection conn, string tableName, string error, DateTime start, DateTime end)
+        {
+
+            string query = @"
+                INSERT INTO ETL_Log (TableName, StartTime, EndTime, RowsExtracted, Status, ErrorMessage)
+                VALUES (@TableName, @StartTime, @EndTime, 0, 'Failed', @Error)";
+
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@TableName", tableName);
+                cmd.Parameters.AddWithValue("@Error", error);
+                cmd.Parameters.AddWithValue("@StartTime", start);
+                cmd.Parameters.AddWithValue("@EndTime", end);
+                cmd.ExecuteNonQuery();
+            }
+
         }
 
         static void Main(string[] args)
