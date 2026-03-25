@@ -58,8 +58,11 @@ Example:
 
 
 Here:
+
 CustomerKey → Surrogate Key
+
 CustomerID → Natural Key (from source)
+
 
 **What is DimChannel?**
 
