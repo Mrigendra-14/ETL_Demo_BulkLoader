@@ -69,6 +69,7 @@ CustomerID → Natural Key (from source)
 DimChannel is a dimension table that stores information about the sales channel through which transactions occur.
 
 Meaning of Channel:
+
 Channel = Sales source (Online, Store, Partner, Reseller, etc.)
 
 
