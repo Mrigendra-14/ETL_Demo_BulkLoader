@@ -96,7 +96,7 @@ Example:
 **Surrogate Key vs Natural Key**
 
 
-**Surrogate Key: **
+**Surrogate Key:**
 
 Surrogate Key is an artificial key created in the data warehouse.
 
@@ -113,8 +113,11 @@ CustomerKey (IDENTITY column)
 Characteristics of Surrogate Key:
 
 •	Auto-generated (IDENTITY)
+
 •	No business meaning
+
 •	Stable and unique
+
 •	Best for joins
 
 **Natural Key:**  
@@ -143,14 +146,18 @@ Why we need Surrogate Key?
 
 
 •	If source changes -> Data warehouse remains stable
+
 •	Faster joins
+
 •	Supports historical tracking (SCD)
 
 Without Surrogate Key: CustomerID changes from 100 -> 200, and then all relationships may be broken. 
 
  
 With Surrogate Key: CustomerKey remains the same -> No issue 
+
 Natural Key → Comes from source (CustomerID)
+
 Surrogate Key → Created in Data Warehouse (CustomerKey)
 
 Differences:
