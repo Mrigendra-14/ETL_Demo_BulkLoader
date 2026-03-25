@@ -12,7 +12,9 @@ It is the step where we store business-related descriptive information
 Why is it required:
 
 •	To store clean and structured business data
+
 •	To support reporting and analytics
+
 •	To avoid repeated joins from raw tables
 
 Example:
