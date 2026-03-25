@@ -18,14 +18,15 @@ Why is it required:
 Example:
 
 Source:
-Customer ID	Name	Email
-100	John	john@gmail.com
+
+<img width="840" height="71" alt="image" src="https://github.com/user-attachments/assets/d604b07f-ca20-4e1e-8adf-f659aa354bf3" />
+
 
 
 After Dimension Load (DimCustomer)
 
-CustomerKey	CustomerID	Name	Email
-1	100	John	john@gmail.com
+<img width="812" height="92" alt="image" src="https://github.com/user-attachments/assets/dca62a89-5fb9-4da1-a0fe-a04509d66dd8" />
+
 
 
 
@@ -45,8 +46,8 @@ It will contain:
 
 Example:
 
-CustomerKey	CustomerID	Name	Email
-1	100	John smith	john@gmail.com
+<img width="835" height="100" alt="image" src="https://github.com/user-attachments/assets/557e7d1e-177d-4246-90a9-7c952c337329" />
+
 
 
 Here:
@@ -63,9 +64,8 @@ Channel = Sales source (Online, Store, Partner, Reseller, etc.)
 
 Example:
 
-ChannelKey	ChannelName
-1	Online
-2	Store
+<img width="825" height="109" alt="image" src="https://github.com/user-attachments/assets/333ac3ba-3e9a-407f-a020-378e47b1bdb6" />
+
 
 What is DimBrand?
 
