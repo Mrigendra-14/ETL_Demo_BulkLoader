@@ -40,10 +40,15 @@ This loading process = Dimension Load
 DimCustomer is a dimension table that stores customer-related descriptive information for reporting and analysis.
 
 It will contain:
+
 •	Customer name
+
 •	Email Address
+
 •	Territory / Region
+
 •	CustomerID (Natural Key)
+
 •	CustomerKey (Surrogate Key)
 
 Example:
