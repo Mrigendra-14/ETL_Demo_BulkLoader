@@ -112,13 +112,13 @@ CustomerKey (IDENTITY column)
 
 Characteristics of Surrogate Key:
 
-•	Auto-generated (IDENTITY)
+ •	Auto-generated (IDENTITY)
 
-•	No business meaning
+ •	No business meaning
 
-•	Stable and unique
+ •	Stable and unique
 
-•	Best for joins
+ •	Best for joins
 
 **Natural Key:**  
 
@@ -151,16 +151,16 @@ Why we need Surrogate Key?
 
 •	Supports historical tracking (SCD)
 
-Without Surrogate Key: CustomerID changes from 100 -> 200, and then all relationships may be broken. 
+**Without Surrogate Key** : CustomerID changes from 100 -> 200, and then all relationships may be broken. 
 
  
-With Surrogate Key: CustomerKey remains the same -> No issue 
+**With Surrogate Key**: CustomerKey remains the same -> No issue 
 
-Natural Key → Comes from source (CustomerID)
+**Natural Key** → Comes from source (CustomerID)
 
-Surrogate Key → Created in Data Warehouse (CustomerKey)
+**Surrogate Key** → Created in Data Warehouse (CustomerKey)
 
-Differences:
+**Differences:**
 
 Natural keys are owned by the source system, so the source can change them anytime. Surrogate keys are owned by the data warehouse itself, so the warehouse controls stability.
 
