@@ -118,6 +118,10 @@ END;
 
 EXEC usp_Load_All
 
+--Step-6: To test the Idempotency, we will run the SP twice
+EXEC usp_Load_FactSales;
+EXEC usp_Load_FactSales;
+
 
 
 

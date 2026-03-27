@@ -8,7 +8,12 @@
 
 --Then we will create a master SP (usp_Load_All) to execute usp_Load_Dimensions and usp_Load_FactSales in sequence.
 
--- Finally, we will execute usp_Load_All to perform the entire load process.
+-- Then, we will execute usp_Load_All to run the complete ETL pipeline.
+
+--Finally,To test the Idempotency, we will run the SP twice.
+
+EXEC usp_Load_FactSales;
+EXEC usp_Load_FactSales;
 
 
     
