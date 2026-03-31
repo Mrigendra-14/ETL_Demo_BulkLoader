@@ -103,6 +103,16 @@ BEGIN
 
 END;
 
+--usp_Load_Dimensions
+CREATE OR ALTER PROCEDURE usp_Load_Dimensions
+AS
+BEGIN
+    EXEC usp_Load_DimCustomer;
+    EXEC usp_Load_DimChannel;
+    EXEC usp_Load_DimBrand;
+END;
+--Note: usp_Load_DimCustomer, usp_Load_DimChannel and usp_Load_DimBrand; are in the Exercise-7
+
 --Step-4: Step 4 — Create Master SP
 
 CREATE OR ALTER PROCEDURE usp_Load_All
