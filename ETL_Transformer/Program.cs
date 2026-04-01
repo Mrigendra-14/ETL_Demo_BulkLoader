@@ -11,7 +11,7 @@ namespace ETL_Transformer
 
 
         //This method retrieves data from the staging tables, joining them together to create a comprehensive dataset for transformation.
-        static DataTable GetStagingData(SqlConnection conn)
+        static async Task <DataTable> GetStagingDataAsync(SqlConnection conn)
         {
             string query = @"
             SELECT
@@ -31,119 +31,143 @@ namespace ETL_Transformer
             LEFT JOIN stg_SalesOrderHeader s ON c.CustomerID = s.CustomerID";
 
             using (SqlCommand cmd = new SqlCommand(query, conn))
-            using (SqlDataAdapter da = new SqlDataAdapter(cmd))
             {
-                DataTable dt = new DataTable();
-                da.Fill(dt);
-                return dt;
+                cmd.CommandTimeout = 300;
+
+                using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
+                {
+                    DataTable dt = new DataTable();
+                    dt.Load(reader);
+                    return dt;
+                }
             }
         }
         //Now create Transformation method
         //This method will validate the data, Insert valid rows and log rejected rows.
 
-        static void TransformData()
+        static async Task TransformDataAsync()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            await using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                conn.Open();
+                await conn.OpenAsync();
 
-                DataTable stagingData = GetStagingData(conn);
+                DataTable stagingData = await GetStagingDataAsync(conn);
 
                 foreach (DataRow row in stagingData.Rows)
                 {
-                    int? customerId = row["CustomerID"] == DBNull.Value
-                        ? null
-                        : Convert.ToInt32(row["CustomerID"]);
+                    int? customerId = null;
+                    try
+                    {
 
-                    int? personId = row["PersonID"] == DBNull.Value
-                        ? null
-                        : Convert.ToInt32(row["PersonID"]);
-                    string email = row["EmailAddress"]?.ToString();
+                        customerId = row["CustomerID"] == DBNull.Value
+                            ? null
+                            : Convert.ToInt32(row["CustomerID"]);
 
-                    // Rejected case
-                    if (customerId == null)
-                    {
-                        LogError(conn, customerId, "CustomerID is NULL");
-                        continue;
+                        int? personId = row["PersonID"] == DBNull.Value
+                            ? null
+                            : Convert.ToInt32(row["PersonID"]);
+
+                        string email = row["EmailAddress"] == DBNull.Value ? null : row["EmailAddress"].ToString().Trim();
+
+                        // Rejected case
+                        if (customerId == null)
+                        {
+                            await LogErrorAsync(conn, customerId, "CustomerID is NULL");
+                            continue;
+                        }
+                        else if (personId == null)
+                        {
+                            await LogErrorAsync(conn, customerId, "Store customer - No PersonID, no email possible");
+                            continue;
+                        }
+                        else if (string.IsNullOrWhiteSpace(email))
+                        {
+                             await LogErrorAsync(conn, customerId, "PersonID exists but no EmailAddress record");
+                            continue;
+                        }
+                        else
+                        {
+                            // Valid data will insert
+                            await InsertValidRecordAsync(conn, row);
+                        }
                     }
-                    else if (personId == null)
+                    catch (Exception ex)
                     {
-                        LogError(conn, customerId, "Store customer - No PersonID, no email possible");
-                        continue;
-                    }
-                    else if (string.IsNullOrWhiteSpace(email))
-                    {
-                        LogError(conn, customerId, "PersonID exists but no EmailAddress record");
-                        continue;
-                    }
-                    else
-                    {
-                        // Valid data will insert
-                        InsertValidRecord(conn, row);
+                       await LogErrorAsync(conn, customerId, $"Unexpected error: {ex.Message}");
                     }
                 }
             }
         }
-        //Now Insert Valid record
-        static void InsertValidRecord(SqlConnection conn, DataRow row)
-        {
-            string query = @"
+            //Now Insert Valid record
+            static async Task InsertValidRecordAsync(SqlConnection conn, DataRow row)
+            {
+                string query = @"
             INSERT INTO trn_MarketingCustomer
             (CustomerID, CustomerName, EmailAddress, TerritoryName, SalesOrderID, OrderDate, TotalDue)
             VALUES
             (@CustomerID, @CustomerName, @EmailAddress, @TerritoryName, @SalesOrderID, @OrderDate, @TotalDue)";
 
-            using (SqlCommand cmd = new SqlCommand(query, conn))
-            {
-                cmd.Parameters.AddWithValue("@CustomerID", row["CustomerID"]);
-                cmd.Parameters.AddWithValue("@CustomerName",
-                    $"{row["FirstName"]} {row["LastName"]}");
-                cmd.Parameters.AddWithValue("@EmailAddress", row["EmailAddress"]);
-                cmd.Parameters.AddWithValue("@TerritoryName", row["TerritoryName"]);
-                cmd.Parameters.AddWithValue("@SalesOrderID", row["SalesOrderID"] ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@OrderDate", row["OrderDate"] ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@TotalDue", row["TotalDue"] ?? DBNull.Value);
+                string firstName = row["FirstName"] == DBNull.Value ? null : row["FirstName"].ToString().Trim();
+                string lastName = row["LastName"] == DBNull.Value ? null : row["LastName"].ToString().Trim();
+                string email = row["EmailAddress"] == DBNull.Value ? null : row["EmailAddress"].ToString().Trim();
+                string territory = row["TerritoryName"] == DBNull.Value ? null : row["TerritoryName"].ToString().Trim();
 
-                cmd.ExecuteNonQuery();
-            }
-        }
+                string customerName = (firstName == null && lastName == null) ? null : $"{firstName} {lastName}".Trim();
 
-        //Now Log Error
 
-        static void LogError(SqlConnection conn, int? customerId, string reason)
-        {
-            string query = @"
-            INSERT INTO ETL_ErrorLog (SourceTable, RecordID, ErrorReason)
-            VALUES ('stg_Customer', @RecordID, @ErrorReason)";
 
-            using (SqlCommand cmd = new SqlCommand(query, conn))
-            {
-                cmd.Parameters.AddWithValue("@RecordID", customerId?.ToString() ?? "NULL");
-                cmd.Parameters.AddWithValue("@ErrorReason", reason);
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.CommandTimeout = 300;
+                    cmd.Parameters.Add("@CustomerID", SqlDbType.Int).Value = row["CustomerID"];
+                    cmd.Parameters.Add("@CustomerName", SqlDbType.NVarChar, 200).Value = (object)customerName ?? DBNull.Value;
+                    cmd.Parameters.Add("@EmailAddress", SqlDbType.NVarChar, 200).Value = (object)email ?? DBNull.Value;
+                    cmd.Parameters.Add("@TerritoryName", SqlDbType.NVarChar, 100).Value = (object)territory ?? DBNull.Value;
+                    cmd.Parameters.Add("@SalesOrderID", SqlDbType.Int).Value = row["SalesOrderID"] == DBNull.Value ? DBNull.Value : row["SalesOrderID"];
+                    cmd.Parameters.Add("@OrderDate", SqlDbType.DateTime).Value = row["OrderDate"] == DBNull.Value ? DBNull.Value : Convert.ToDateTime(row["OrderDate"]);
+                    cmd.Parameters.Add("@TotalDue", SqlDbType.Money).Value = row["TotalDue"] == DBNull.Value ? DBNull.Value : Convert.ToDecimal(row["TotalDue"]);
 
-                cmd.ExecuteNonQuery();
-            }
-        }
-        //make Idempotent before transform
-        static void PrepareTables(SqlConnection conn)
-        {
-            using (SqlCommand cmd = new SqlCommand("TRUNCATE TABLE trn_MarketingCustomer; TRUNCATE TABLE ETL_ErrorLog;", conn))
-            {
-                cmd.ExecuteNonQuery();
-            }
-        }
-        static void Main(string[] args)
-        {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                conn.Open();
-                PrepareTables(conn);
+                    await cmd.ExecuteNonQueryAsync();
+                }
             }
 
-            TransformData();
+            //Now Log Error
 
-            Console.WriteLine("Transformation completed.");
-            Console.ReadLine();
+            static async Task LogErrorAsync(SqlConnection conn, int? customerId, string reason)
+            {
+                string query = @"
+                INSERT INTO ETL_ErrorLog (SourceTable, RecordID, ErrorReason)
+                VALUES ('stg_Customer', @RecordID, @ErrorReason)";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.Add("@RecordID", SqlDbType.VarChar, 100).Value = (object)customerId?.ToString() ?? DBNull.Value;
+                    cmd.Parameters.Add("@ErrorReason", SqlDbType.VarChar, 500).Value = (object)reason ?? DBNull.Value;
+
+                     await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            //make Idempotent before transform
+            static async Task PrepareTablesAsync(SqlConnection conn)
+            {
+                using (SqlCommand cmd = new SqlCommand("TRUNCATE TABLE trn_MarketingCustomer; TRUNCATE TABLE ETL_ErrorLog;", conn))
+                {
+                   await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            static async Task Main(string[] args)
+            {
+                await using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                     await conn.OpenAsync();
+                     await PrepareTablesAsync(conn);
+                }
+
+                await TransformDataAsync();
+
+                Console.WriteLine("Transformation completed.");
+                Console.ReadLine();
+            }
         }
     }
-}
+

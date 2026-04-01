@@ -24,7 +24,7 @@ namespace ETL_Demo_BulkLoader
                 csv.ReadHeader();
                 string[] headers = csv.HeaderRecord;
 
-                
+
                 foreach (var header in headers)
                 {
                     if (header.Equals("rowguid", StringComparison.OrdinalIgnoreCase))
@@ -33,7 +33,7 @@ namespace ETL_Demo_BulkLoader
                         dt.Columns.Add(header, typeof(string));
                 }
 
-                
+
                 while (csv.Read())
                 {
                     DataRow row = dt.NewRow();
@@ -42,12 +42,12 @@ namespace ETL_Demo_BulkLoader
                         string val = csv.GetField(header);
                         string cleaned = val?.Trim().Trim('"').Trim('{', '}').Trim('(', ')');
 
-                        
+
                         if (string.IsNullOrWhiteSpace(cleaned))
                         {
                             row[header] = DBNull.Value;
                         }
-                        
+
                         else if (header.Equals("rowguid", StringComparison.OrdinalIgnoreCase))
                         {
                             row[header] = Guid.TryParse(cleaned, out Guid g)
@@ -66,19 +66,22 @@ namespace ETL_Demo_BulkLoader
             return dt;
         }
 
-        static void BulkInsert(string filePath, string tableName)
+        static async Task BulkInsertAsync(string filePath, string tableName)
         {
-            DataTable dt = ReadCsv(filePath);
+
             DateTime startTime = DateTime.Now;
             bool isSuccess = true;
+            int rowCount = 0;
 
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            await using (SqlConnection conn = new SqlConnection(connectionString))
             {
 
-                conn.Open();
+               await conn.OpenAsync();
                 try
                 {
+                    DataTable dt = ReadCsv(filePath);
+                    rowCount = dt.Rows.Count;
 
                     using (SqlBulkCopy bulkCopy = new SqlBulkCopy(conn))
                     {
@@ -95,9 +98,9 @@ namespace ETL_Demo_BulkLoader
 
                         bulkCopy.BatchSize = 1000;
                         bulkCopy.BulkCopyTimeout = 120;
-                        bulkCopy.WriteToServer(dt);
+                        await bulkCopy.WriteToServerAsync(dt);
                         DateTime endTime = DateTime.Now;
-                        LogToDatabase(conn, tableName, dt.Rows.Count, startTime, endTime);
+                        await LogToDatabaseAsync(conn, tableName, dt.Rows.Count, startTime, endTime);
                     }
                 }
 
@@ -107,7 +110,7 @@ namespace ETL_Demo_BulkLoader
                 {
                     isSuccess = false;
                     DateTime endTime = DateTime.Now;
-                    LogErrorToDatabase(conn, tableName, ex.Message, startTime, endTime);
+                    await LogErrorToDatabaseAsync(conn, tableName, ex.Message, startTime, endTime);
                     Console.WriteLine($"Error loading {filePath} into {tableName}: {ex.Message}");
                 }
             }
@@ -115,13 +118,13 @@ namespace ETL_Demo_BulkLoader
 
             if (isSuccess)
             {
-                Console.WriteLine($"Loaded {dt.Rows.Count} rows from {filePath} into {tableName}");
+                Console.WriteLine($"Loaded {rowCount} rows from {filePath} into {tableName}");
             }
 
 
         }
 
-        static void LogToDatabase(SqlConnection conn, string tableName, int rowCount, DateTime start, DateTime end)
+        static async Task LogToDatabaseAsync(SqlConnection conn, string tableName, int rowCount, DateTime start, DateTime end)
         {
 
             string query = @"
@@ -130,15 +133,15 @@ namespace ETL_Demo_BulkLoader
 
             using (SqlCommand cmd = new SqlCommand(query, conn))
             {
-                cmd.Parameters.AddWithValue("@TableName", tableName);
-                cmd.Parameters.AddWithValue("@RowCount", rowCount);
-                cmd.Parameters.AddWithValue("@StartTime", start);
-                cmd.Parameters.AddWithValue("@EndTime", end);
-                cmd.ExecuteNonQuery();
+                cmd.Parameters.Add("@TableName", SqlDbType.NVarChar, 100).Value = tableName;
+                cmd.Parameters.Add("@RowCount", SqlDbType.Int).Value = rowCount;
+                cmd.Parameters.Add("@StartTime", SqlDbType.DateTime).Value = start;
+                cmd.Parameters.Add("@EndTime", SqlDbType.DateTime).Value = end;
+                await cmd.ExecuteNonQueryAsync();
             }
 
         }
-        static void LogErrorToDatabase(SqlConnection conn, string tableName, string error, DateTime start, DateTime end)
+        static async Task LogErrorToDatabaseAsync(SqlConnection conn, string tableName, string error, DateTime start, DateTime end)
         {
 
             string query = @"
@@ -147,25 +150,38 @@ namespace ETL_Demo_BulkLoader
 
             using (SqlCommand cmd = new SqlCommand(query, conn))
             {
-                cmd.Parameters.AddWithValue("@TableName", tableName);
-                cmd.Parameters.AddWithValue("@Error", error);
-                cmd.Parameters.AddWithValue("@StartTime", start);
-                cmd.Parameters.AddWithValue("@EndTime", end);
-                cmd.ExecuteNonQuery();
+                cmd.Parameters.Add("@TableName", SqlDbType.NVarChar, 100).Value = tableName;
+                cmd.Parameters.Add("@Error", SqlDbType.NVarChar, 500).Value = error;
+                cmd.Parameters.Add("@StartTime", SqlDbType.DateTime).Value = start;
+                cmd.Parameters.Add("@EndTime", SqlDbType.DateTime).Value = end;
+                await cmd.ExecuteNonQueryAsync();
             }
 
         }
 
-        static void Main(string[] args)
+        private static string GetBasePath()
         {
-            string basePath = @"C:\ETLDemo\InputFiles\";
+            string path = ConfigurationManager.AppSettings["InputFilesBasePath"]
+                 ?? throw new InvalidOperationException("Missing required config key: 'InputFilesBasePath' in AppSettings.");
 
-            BulkInsert(basePath + "Customer.csv", "stg_Customer");
-            BulkInsert(basePath + "Person.csv", "stg_Person");
-            BulkInsert(basePath + "EmailAddress.csv", "stg_EmailAddress");
-            BulkInsert(basePath + "SalesOrderHeader.csv", "stg_SalesOrderHeader");
-            BulkInsert(basePath + "SalesOrderDetail.csv", "stg_SalesOrderDetail");
-            BulkInsert(basePath + "SalesTerritory.csv", "stg_SalesTerritory");
+            if (!Directory.Exists(path))
+                throw new DirectoryNotFoundException(
+                    $"Input files directory not found: '{path}'");
+
+            return path;
+        }
+
+        static async Task Main(string[] args)
+
+        {
+            string basePath = GetBasePath();
+            
+            await BulkInsertAsync(Path.Combine(basePath, "Customer.csv"), "stg_Customer");
+            await BulkInsertAsync(Path.Combine(basePath, "Person.csv"), "stg_Person");
+            await BulkInsertAsync(Path.Combine(basePath, "EmailAddress.csv"), "stg_EmailAddress");
+            await BulkInsertAsync(Path.Combine(basePath, "SalesOrderHeader.csv"), "stg_SalesOrderHeader");
+            await BulkInsertAsync(Path.Combine(basePath, "SalesOrderDetail.csv"), "stg_SalesOrderDetail");
+            await BulkInsertAsync(Path.Combine(basePath, "SalesTerritory.csv"), "stg_SalesTerritory");
             Console.WriteLine("All files loaded successfully.");
             Console.ReadLine();
         }
