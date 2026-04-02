@@ -66,20 +66,47 @@ namespace ETL_Demo_BulkLoader
             return dt;
         }
 
-        static async Task BulkInsertAsync(string filePath, string tableName)
+        static async Task <(bool success, int rowCount)> BulkInsertAsync(string filePath, string tableName)
         {
+            Log($"[START] Loading {tableName} from {Path.GetFileName(filePath)}");
+
+            if (!File.Exists(filePath))
+            {
+                Log($"[SKIP] File not found: {filePath}");
+                return (false, 0);
+            }
+            if (new FileInfo(filePath).Length == 0)
+            {
+                Log($"[SKIP] File is empty: {filePath}");
+                return (false, 0);
+            }
+            try
+            {
+                using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.None)) { }
+            }
+            catch (Exception ex)
+            {
+                Log($"[SKIP] File cannot be accessed: {ex.Message}");
+                return (false, 0);
+            }
+            if (Path.GetExtension(filePath).ToLower() != ".csv")
+            {
+                Log($"[SKIP] Invalid file type: {filePath}");
+                return (false, 0);
+            }
+
 
             DateTime startTime = DateTime.Now;
-            bool isSuccess = true;
             int rowCount = 0;
 
 
             await using (SqlConnection conn = new SqlConnection(connectionString))
             {
 
-               await conn.OpenAsync();
+               
                 try
                 {
+                    await conn.OpenAsync();
                     DataTable dt = ReadCsv(filePath);
                     rowCount = dt.Rows.Count;
 
@@ -100,7 +127,11 @@ namespace ETL_Demo_BulkLoader
                         bulkCopy.BulkCopyTimeout = 120;
                         await bulkCopy.WriteToServerAsync(dt);
                         DateTime endTime = DateTime.Now;
-                        await LogToDatabaseAsync(conn, tableName, dt.Rows.Count, startTime, endTime);
+                        await LogToDatabaseAsync(conn, tableName, rowCount, startTime, endTime);
+                        Log($"[SUCCESS] {tableName} — {rowCount} rows loaded in {(endTime - startTime).TotalSeconds:F2}s");
+                        return (true, rowCount);
+                        
+
                     }
                 }
 
@@ -108,17 +139,12 @@ namespace ETL_Demo_BulkLoader
 
                 catch (Exception ex)
                 {
-                    isSuccess = false;
+                    
                     DateTime endTime = DateTime.Now;
                     await LogErrorToDatabaseAsync(conn, tableName, ex.Message, startTime, endTime);
-                    Console.WriteLine($"Error loading {filePath} into {tableName}: {ex.Message}");
+                    Log($"[FAILED] {tableName} — {ex.Message}");
+                    return (false, 0);
                 }
-            }
-
-
-            if (isSuccess)
-            {
-                Console.WriteLine($"Loaded {rowCount} rows from {filePath} into {tableName}");
             }
 
 
@@ -174,16 +200,41 @@ namespace ETL_Demo_BulkLoader
         static async Task Main(string[] args)
 
         {
+            Log("=== ETL BULK LOADER STARTED ===");
             string basePath = GetBasePath();
+
+            int successCount = 0;
+            int failedCount = 0;
+            int totalRows = 0;
+
             
-            await BulkInsertAsync(Path.Combine(basePath, "Customer.csv"), "stg_Customer");
-            await BulkInsertAsync(Path.Combine(basePath, "Person.csv"), "stg_Person");
-            await BulkInsertAsync(Path.Combine(basePath, "EmailAddress.csv"), "stg_EmailAddress");
-            await BulkInsertAsync(Path.Combine(basePath, "SalesOrderHeader.csv"), "stg_SalesOrderHeader");
-            await BulkInsertAsync(Path.Combine(basePath, "SalesOrderDetail.csv"), "stg_SalesOrderDetail");
-            await BulkInsertAsync(Path.Combine(basePath, "SalesTerritory.csv"), "stg_SalesTerritory");
-            Console.WriteLine("All files loaded successfully.");
+            (bool success, int rows) = await BulkInsertAsync(Path.Combine(basePath, "Customer.csv"), "stg_Customer");
+            if (success) { successCount++; totalRows += rows; } else failedCount++;
+
+            (success, rows) = await BulkInsertAsync(Path.Combine(basePath, "Person.csv"), "stg_Person");
+            if (success) { successCount++; totalRows += rows; } else failedCount++;
+
+            (success, rows) = await BulkInsertAsync(Path.Combine(basePath, "EmailAddress.csv"), "stg_EmailAddress");
+            if (success) { successCount++; totalRows += rows; } else failedCount++;
+
+            (success, rows) = await BulkInsertAsync(Path.Combine(basePath, "SalesOrderHeader.csv"), "stg_SalesOrderHeader");
+            if (success) { successCount++; totalRows += rows; } else failedCount++;
+
+            (success, rows) = await BulkInsertAsync(Path.Combine(basePath, "SalesOrderDetail.csv"), "stg_SalesOrderDetail");
+            if (success) { successCount++; totalRows += rows; } else failedCount++;
+
+            (success, rows) = await BulkInsertAsync(Path.Combine(basePath, "SalesTerritory.csv"), "stg_SalesTerritory");
+            if (success) { successCount++; totalRows += rows; } else failedCount++;
+
+
+            Log($"[SUMMARY] Tables={successCount + failedCount} | Success={successCount} | Failed={failedCount} | TotalRows={totalRows}");
+            Log("=== ETL BULK LOADER COMPLETED ===");
+          
             Console.ReadLine();
+        }
+        static void Log(string message)
+        {
+            Console.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}");
         }
     }
 }
